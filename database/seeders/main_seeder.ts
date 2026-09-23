@@ -2,63 +2,99 @@ import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import User from '#models/user'
 import Category from '#models/category'
 import Product from '#models/product'
-import hash from '@adonisjs/core/services/hash'
+import ValidationLog from '#models/validation_log'
+import SimilarityService from '#services/similarity_service'
 
 export default class extends BaseSeeder {
   async run() {
-    // 1. Bersihkan data lama agar fresh
+    const similarityService = new SimilarityService()
+
+    await ValidationLog.query().delete()
     await Product.query().delete()
     await Category.query().delete()
     await User.query().delete()
 
-    // 2. Buat User Admin
     const admin = await User.create({
       email: 'admin@app.com',
       password: 'password123',
     })
 
-    // 3. Buat Data Kategori
-    const catElektronik = await Category.create({ name: 'Elektronik' })
-    const catFashion = await Category.create({ name: 'Fashion & Pakaian' })
-    const catKuliner = await Category.create({ name: 'Kuliner & Makanan' })
+    const electronics = await Category.create({ name: 'Elektronik', isSensitive: true })
+    const fashion = await Category.create({ name: 'Fashion & Pakaian', isSensitive: false })
+    const food = await Category.create({ name: 'Kuliner & Makanan', isSensitive: false })
 
-    // 4. Buat Data Produk dengan Berbagai Status (Perlu Di-review & Ditolak)
-    await Product.createMany([
+    const products = [
       {
-        userId: admin.id,
-        categoryId: catElektronik.id,
-        title: 'Smartphone Android RAM 8GB',
-        description: 'Ponsel pintar dengan spesifikasi tinggi untuk gaming dan multitasking.',
+        categoryId: electronics.id,
+        title: 'ABCD',
+        description: 'ABCD',
         price: 2500000,
         stock: 15,
-        scoreSensitive: 85.50,
-        scoreNonSensitive: 90.00,
-        statusReview: 'approved', // Disetujui
+        checkType: 'sensitive' as const,
       },
       {
-        userId: admin.id,
-        categoryId: catFashion.id,
-        title: 'Kemeja Flanel Casual Pria',
-        description: 'Kemeja bahan katun flanel lembut nyaman dipakai sehari-hari.',
+        categoryId: fashion.id,
+        title: 'ABBCD',
+        description: 'Gallant Duck',
         price: 125000,
         stock: 30,
-        scoreSensitive: 40.00,
-        scoreNonSensitive: 45.00,
-        statusReview: 'pending', // Perlu di-review (Pending)
+        checkType: 'non-sensitive' as const,
       },
       {
-        userId: admin.id,
-        categoryId: catKuliner.id,
-        title: 'Keripik Singkong Pedas Daun Jeruk',
-        description: 'Camilan renyah gurih dengan bumbu rempah pilihan.',
+        categoryId: food.id,
+        title: 'ABCD',
+        description: 'A___',
         price: 15000,
         stock: 100,
-        scoreSensitive: 20.00,
-        scoreNonSensitive: 30.00,
-        statusReview: 'rejected', // Ditolak
+        checkType: 'sensitive' as const,
       },
-    ])
+      {
+        categoryId: food.id,
+        title: 'ABBCD',
+        description: 'Gallant Duck',
+        price: 20000,
+        stock: 80,
+        checkType: 'sensitive' as const,
+      },
+      {
+        categoryId: fashion.id,
+        title: 'AAAAA',
+        description: 'A____',
+        price: 90000,
+        stock: 25,
+        checkType: 'sensitive' as const,
+      },
+    ]
 
-    console.log('Seeder berhasil dijalankan: User, Kategori, dan Produk (Pending & Ditolak) telah ditambahkan!')
+    for (const productData of products) {
+      const validationResult = similarityService.validasiProduk(
+        productData.title,
+        productData.description,
+        productData.checkType
+      )
+
+      const product = await Product.create({
+        userId: admin.id,
+        categoryId: productData.categoryId,
+        title: productData.title,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        checkType: productData.checkType,
+        scoreSensitive: validationResult.scoreSensitive,
+        scoreNonSensitive: validationResult.scoreNonSensitive,
+        statusReview: validationResult.status,
+      })
+
+      await ValidationLog.create({
+        productId: product.id,
+        scoreSensitive: validationResult.scoreSensitive,
+        scoreNonSensitive: validationResult.scoreNonSensitive,
+        thresholdUsed: validationResult.threshold,
+        resultStatus: validationResult.status,
+      })
+    }
+
+    console.log('Seeder berhasil: 1 user, 3 kategori, 5 produk, dan 5 validation log dibuat.')
   }
 }

@@ -22,21 +22,22 @@ export default class SimilarityService {
     input2: string,
     strategy: MatchStrategy
   ): SimilarityResult {
-    const trimmed1 = input1.trim()
-    const trimmed2 = input2.trim()
+    
+    const cleaned1 = input1.trim().replace(/\s/g, '')
+    const cleaned2 = input2.trim().replace(/\s/g, '')
 
-    const totalChars = trimmed1.length
+    const totalChars = cleaned1.length
 
     if (totalChars === 0) {
       return { matchCount: 0, totalChars: 0, percentage: 0 }
     }
 
     let matchCount = 0
-    const chars2 = trimmed2.split('')
+    const chars2 = cleaned2.split('')
     const isMatched = new Array(chars2.length).fill(false)
 
-    for (let i = 0; i < trimmed1.length; i++) {
-      const char1 = trimmed1[i]
+    for (let i = 0; i < cleaned1.length; i++) {
+      const char1 = cleaned1[i]
 
       for (let j = 0; j < chars2.length; j++) {
         const char2 = chars2[j]

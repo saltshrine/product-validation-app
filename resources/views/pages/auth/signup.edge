@@ -1,0 +1,48 @@
+@layout()
+  <div class="mx-auto mt-8 max-w-md rounded-xl bg-white p-6 shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] sm:mt-12 sm:p-8">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-[-1.8px] text-[#171717] [text-wrap:balance]">Create Account</h1>
+      <p class="mt-2 mb-8 text-sm text-[#666]">Buat akun untuk mulai memvalidasi produk.</p>
+    </div>
+
+    <div>
+      @form({ route: 'new_account.store', method: 'POST' })
+        <div class="space-y-2">
+          @field.root({ name: 'fullName' })
+            @!field.label({ text: 'Full name' })
+            @!input.control()
+            @!field.error()
+          @end
+        </div>
+
+        <div class="space-y-2">
+          @field.root({ name: 'email' })
+            @!field.label({ text: 'Email' })
+            @!input.control({ type: 'email', autocomplete: 'email' })
+            @!field.error()
+          @end
+        </div>
+
+        <div class="space-y-2">
+          @field.root({ name: 'password' })
+            @!field.label({ text: 'Password' })
+            @!input.control({ type: 'password', autocomplete: 'new-password' })
+            @!field.error()
+          @end
+        </div>
+
+        <div class="space-y-2">
+          @field.root({ name: 'passwordConfirmation' })
+            @!field.label({ text: 'Confirm password' })
+            @!input.control({ type: 'password', autocomplete: 'new-password' })
+            @!field.error()
+          @end
+        </div>
+
+        <div>
+          @!button({ text: 'Sign up', type: 'submit' })
+        </div>
+      @end
+    </div>
+  </div>
+@end

@@ -1,0 +1,95 @@
+@layout('components/layout')
+
+<div class="mx-auto mt-2 max-w-3xl rounded-xl bg-white p-6 shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] sm:p-8">
+  <div class="mb-8 flex items-center justify-between pb-5 shadow-[rgba(0,0,0,0.08)_0px_1px_0px]">
+    <h1 class="text-3xl font-semibold tracking-[-1.8px] text-[#171717] [text-wrap:balance]">Detail Produk & Log Validasi</h1>
+    <a href="/products" class="rounded-lg bg-[#f5f5f5] px-4 py-2 text-sm font-medium text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px] hover:bg-[#ebebeb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">Kembali</a>
+  </div>
+
+  <div class="space-y-6">
+    <!-- Informasi Utama Produk -->
+    <div class="grid grid-cols-1 gap-4 rounded-xl bg-[#fafafa] p-4 shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px] md:grid-cols-2">
+      <div>
+        <span class="text-xs font-semibold text-gray-500 uppercase">Judul Produk (Title):</span>
+        <h2 class="text-lg font-bold text-gray-900 mt-1">{{ product.title }}</h2>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-gray-500 uppercase">Kategori:</span>
+        <p class="text-gray-800 font-semibold mt-1">{{ product.category.name }}</p>
+      </div>
+      <div class="md:col-span-2">
+        <span class="text-xs font-semibold text-gray-500 uppercase">Deskripsi (Description):</span>
+        <p class="mt-1 whitespace-pre-line rounded-lg bg-white p-3 text-[#666] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px]">{{ product.description }}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-gray-500 uppercase">Harga:</span>
+        <p class="text-gray-800 font-semibold mt-1">Rp {{ product.price }}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-gray-500 uppercase">Stok:</span>
+        <p class="text-gray-800 font-semibold mt-1">{{ product.stock }} pcs</p>
+      </div>
+    </div>
+
+    <!-- Hasil Skor & Status Review Terakhir -->
+    <div class="pt-4 shadow-[rgba(0,0,0,0.08)_0px_-1px_0px]">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">Hasil Evaluasi Algoritma</h3>
+      <div class="grid grid-cols-2 gap-4 rounded-xl bg-[#f5faff] p-4 shadow-[rgba(10,114,239,0.2)_0px_0px_0px_1px]">
+        <div>
+          <span class="text-xs font-semibold uppercase text-[#0a72ef]">Skor Sensitive:</span>
+          <p class="mt-1 font-mono text-2xl font-semibold tabular-nums text-[#0a72ef]">{{ product.scoreSensitive }}%</p>
+        </div>
+        <div>
+          <span class="text-xs font-semibold uppercase text-[#0a72ef]">Skor Non-Sensitive:</span>
+          <p class="mt-1 font-mono text-2xl font-semibold tabular-nums text-[#0a72ef]">{{ product.scoreNonSensitive }}%</p>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center space-x-2">
+        <span class="text-sm font-medium text-gray-700">Status Validasi Akhir:</span>
+        @if(product.statusReview == 'approved')
+          <span class="rounded-full bg-[#ecfdf3] px-3 py-1 text-xs font-semibold uppercase text-[#15803d] shadow-[rgba(22,163,74,0.2)_0px_0px_0px_1px]">Approved</span>
+        @elseif(product.statusReview == 'pending')
+          <span class="rounded-full bg-[#fff8eb] px-3 py-1 text-xs font-semibold uppercase text-[#b45309] shadow-[rgba(245,158,11,0.22)_0px_0px_0px_1px]">Pending</span>
+        @else
+          <span class="rounded-full bg-[#fff1f0] px-3 py-1 text-xs font-semibold uppercase text-[#c2413a] shadow-[rgba(255,91,79,0.25)_0px_0px_0px_1px]">Rejected</span>
+        @end
+      </div>
+    </div>
+
+    <!-- Histori Validation Logs (Menunjukkan relasi HasMany & Log setiap percobaan) -->
+    <div class="pt-4 shadow-[rgba(0,0,0,0.08)_0px_-1px_0px]">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">Histori Log Validasi (Validation Logs)</h3>
+      <div class="overflow-x-auto rounded-lg shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px]">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-gray-500 font-medium">ID Log</th>
+              <th class="px-4 py-2 text-left text-gray-500 font-medium">Sens / Non-Sens</th>
+              <th class="px-4 py-2 text-left text-gray-500 font-medium">Threshold</th>
+              <th class="px-4 py-2 text-left text-gray-500 font-medium">Status Hasil</th>
+              <th class="px-4 py-2 text-left text-gray-500 font-medium">Waktu Tes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            @each(log in product.validationLogs)
+              <tr>
+                <td class="px-4 py-2 text-gray-700 font-medium">#{{ log.id }}</td>
+                <td class="px-4 py-2 text-gray-700">{{ log.scoreSensitive }}% / {{ log.scoreNonSensitive }}%</td>
+                <td class="px-4 py-2 text-gray-700">{{ log.thresholdUsed }}%</td>
+                <td class="px-4 py-2">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ log.resultStatus == 'approved' ? 'bg-[#ecfdf3] text-[#15803d] shadow-[rgba(22,163,74,0.2)_0px_0px_0px_1px]' : (log.resultStatus == 'pending' ? 'bg-[#fff8eb] text-[#b45309] shadow-[rgba(245,158,11,0.22)_0px_0px_0px_1px]' : 'bg-[#fff1f0] text-[#c2413a] shadow-[rgba(255,91,79,0.25)_0px_0px_0px_1px]') }}">
+                    {{ log.resultStatus == 'approved' ? 'Approved' : (log.resultStatus == 'pending' ? 'Pending' : 'Rejected') }}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-gray-500 text-xs">{{ log.createdAt.toFormat('yyyy-MM-dd HH:mm:ss') }}</td>
+              </tr>
+            @endeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+@end

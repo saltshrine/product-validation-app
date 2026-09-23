@@ -1,0 +1,15 @@
+@let(classes = 'min-h-24 w-full rounded-lg bg-white px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] placeholder:text-[#999] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2')
+
+<textarea {{
+  $props
+    .except(['value'])
+    .merge({
+      name: $context.name,
+      id: $context.id,
+      class: classes,
+      'aria-invalid': $context.hasErrors ? 'true' : false,
+      'data-invalid': $context.hasErrors ? 'true' : false,
+      'aria-describedby': $context.hasErrors ? `${$context.id}-error` : '',
+    })
+    .toAttrs()
+}}>{{{ $context.oldValue || $props.get('value') || '' }}}</textarea>

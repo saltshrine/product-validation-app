@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id" class="bg-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Validation App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen overflow-x-hidden bg-white font-sans text-[#171717] antialiased [font-variant-ligatures:'liga']">
+
+  <nav class="bg-white px-4 py-5 sm:px-6">
+    <div class="mx-auto flex max-w-7xl items-center justify-between">
+      <a href="/products" class="text-base font-semibold tracking-[-0.4px] text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-4">Product Validation App</a>
+      <div class="flex items-center gap-4 text-sm font-medium text-[#666]">
+        @if(auth.user)
+          <form action="{{ route('session.destroy') }}" method="POST" class="inline-flex">
+            {{ csrfField() }}
+            <button type="submit" class="min-h-6 rounded-md px-2 py-1 transition-colors hover:text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">Logout</button>
+          </form>
+        @end
+      </div>
+    </div>
+  </nav>
+
+  <main class="mx-auto min-h-[calc(100vh-76px)] max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+    @if(flashMessages.has('success'))
+      <div role="status" aria-live="polite" class="mb-6 rounded-lg bg-[#f0fdf4] px-4 py-3 text-sm font-medium text-[#15803d] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px]">
+        {{ flashMessages.get('success') }}
+      </div>
+    @end
+    
+    {{{ await $slots.main() }}}
+  </main>
+
+</body>
+</html>

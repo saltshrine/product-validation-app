@@ -1,0 +1,31 @@
+@layout('components/layout')
+
+<div class="mx-auto mt-8 max-w-md rounded-xl bg-white p-6 shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] sm:mt-12 sm:p-8">
+  <h1 class="mb-2 text-center text-3xl font-semibold tracking-[-1.8px] text-[#171717] [text-wrap:balance]">Login Aplikasi</h1>
+  <p class="mb-8 text-center text-sm text-[#666]">Masuk untuk mengelola validasi produk Anda.</p>
+
+  @if(flashMessages.has('error'))
+    <div role="alert" aria-live="polite" class="mb-4 rounded-lg bg-[#fff1f0] px-4 py-3 text-sm text-[#c2413a] shadow-[rgba(255,91,79,0.25)_0px_0px_0px_1px]">
+      {{ flashMessages.get('error') }}
+    </div>
+  @end
+
+  <form action="/login" method="POST" class="space-y-4">
+    {{ csrfField() }}
+
+    <div>
+      <label for="email" class="mb-2 block text-sm font-medium text-[#171717]">Email</label>
+      <input id="email" type="email" name="email" autocomplete="email" required class="min-h-11 w-full rounded-lg bg-white px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] placeholder:text-[#999] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">
+    </div>
+
+    <div>
+      <label for="password" class="mb-2 block text-sm font-medium text-[#171717]">Password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required class="min-h-11 w-full rounded-lg bg-white px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] placeholder:text-[#999] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">
+    </div>
+
+    <button type="submit" class="min-h-11 w-full rounded-lg bg-[#171717] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">
+      Masuk
+    </button>
+  </form>
+</div>
+@end

@@ -1,0 +1,113 @@
+@layout('components/layout')
+
+<div class="mx-auto mt-2 max-w-2xl rounded-xl bg-white p-6 shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] sm:p-8">
+  <div class="mb-8 flex items-center justify-between pb-5 shadow-[rgba(0,0,0,0.08)_0px_1px_0px]">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-[-1.8px] text-[#171717] [text-wrap:balance]">Edit Produk</h1>
+      <p class="mt-2 text-sm leading-6 text-[#666]">Perubahan akan menghitung ulang skor validasi.</p>
+    </div>
+    <a href="/products" class="rounded-lg bg-[#f5f5f5] px-3 py-2 text-sm font-medium text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px] hover:bg-[#ebebeb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">Kembali</a>
+  </div>
+  
+  <form action="/products/{{ product.id }}/update" method="POST" class="space-y-5">
+    {{ csrfField() }}
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Kategori</label>
+      <select name="categoryId" class="min-h-11 mt-1 block w-full rounded-lg bg-[#fafafa] px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
+        @each(category in categories)
+          <option value="{{ category.id }}" {{ product.categoryId == category.id ? 'selected' : '' }}>
+            {{ category.name }}
+          </option>
+        @end
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Title (Input 1)</label>
+      <input type="text" name="title" value="{{ product.title }}" class="min-h-11 mt-1 block w-full rounded-lg bg-white px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Description (Input 2)</label>
+      <textarea name="description" rows="3" class="mt-1 block w-full rounded-lg bg-white px-3 py-2.5 text-base text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>{{ product.description }}</textarea>
+    </div>
+
+    <div class="flex items-center justify-between rounded-lg bg-[#f5faff] p-4 shadow-[rgba(10,114,239,0.2)_0px_0px_0px_1px]" aria-live="polite">
+      <span class="text-sm font-medium text-[#0759b8]">Live score</span>
+      <span id="ajax-live-score" class="font-mono text-lg font-semibold tabular-nums text-[#0a72ef]">0%</span>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Tipe Pengecekan Ulang</label>
+      <select name="checkType" class="min-h-11 mt-1 block w-full rounded-lg bg-[#f5faff] px-3 py-2.5 text-base font-medium text-[#0759b8] shadow-[rgba(10,114,239,0.2)_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
+        <option value="sensitive">Sensitive Case</option>
+        <option value="non-sensitive">Non-Sensitive Case</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Harga (Rp)</label>
+        <input type="number" name="price" value="{{ product.price }}" min="0" class="min-h-11 mt-1 block w-full rounded-lg bg-white px-3 py-2.5 text-base tabular-nums text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Stok</label>
+        <input type="number" name="stock" value="{{ product.stock }}" min="0" class="min-h-11 mt-1 block w-full rounded-lg bg-white px-3 py-2.5 text-base tabular-nums text-[#171717] shadow-[rgba(0,0,0,0.08)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_2px,#fafafa_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
+      </div>
+    </div>
+
+    <div class="pt-3">
+      <button type="submit" class="min-h-11 w-full rounded-lg bg-[#171717] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2">
+        Simpan Perubahan & Validasi Ulang
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const titleInput = document.querySelector('input[name="title"]');
+  const descInput = document.querySelector('textarea[name="description"]');
+  const typeSelect = document.querySelector('select[name="checkType"]');
+  const scoreBadge = document.getElementById('ajax-live-score');
+
+  async function fetchLiveScore() {
+    const title = titleInput.value;
+    const description = descInput.value;
+    const checkType = typeSelect.value;
+
+    if (title.length === 0) {
+      scoreBadge.innerText = '0%';
+      return;
+    }
+
+    try {
+      // Mengirim request POST secara asinkron ke backend AdonisJS
+      const response = await fetch('/api/check-similarity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrfToken }}'
+        },
+        body: JSON.stringify({ title, description, checkType })
+      });
+
+      const data = await response.json();
+      scoreBadge.innerText = `${data.percentage}% (Match: ${data.matchCount}/${data.totalChars})`;
+    } catch (error) {
+      console.error('Gagal mengambil data AJAX:', error);
+    }
+  }
+
+  // 1. PANGGIL SEKALI SAAT HALAMAN PERTAMA KALI DIBUKA (Agar membaca data lama)
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchLiveScore();
+  });
+
+  // 2. Panggil saat user mengubah input atau pilihan
+  titleInput.addEventListener('input', fetchLiveScore);
+  descInput.addEventListener('input', fetchLiveScore);
+  typeSelect.addEventListener('change', fetchLiveScore);
+</script>
+
+@end

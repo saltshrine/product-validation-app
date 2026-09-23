@@ -14,15 +14,11 @@ export default class CategoriesController {
 
   async store({ request, response, session }: HttpContext) {
     const payload = await request.validateUsing(categoryValidator)
-    
-    // Normalisasi checkbox (di form HTML checkbox dikirim sebagai string 'on')
-    const isSensitive = !!request.input('isSensitive') 
+    const isSensitive = !!request.input('isSensitive')
 
     await Category.create({ ...payload, isSensitive })
 
     session.flash('success', 'Kategori berhasil dibuat!')
     return response.redirect().toPath('/categories')
   }
-
-  // .. edit, update, destroy (bisa ditambahkan nanti untuk melengkapi CRUD)
 }

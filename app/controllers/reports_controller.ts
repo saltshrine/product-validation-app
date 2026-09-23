@@ -2,7 +2,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Product from '#models/product'
 
 export default class ReportController {
-  // Method statis untuk menghitung data laporan
   public static async getSummaryReport() {
     const allProducts = await Product.all()
     let totalAman = 0
@@ -10,11 +9,9 @@ export default class ReportController {
     let totalDitolak = 0
     let totalScoreSum = 0
 
-    // a. Nested Loop
     for (let i = 0; i < allProducts.length; i++) {
       const prod = allProducts[i]
-      
-      // b. Nested If - Sesuaikan dengan nilai di database ('approved', 'pending', 'rejected')
+
       if (prod.statusReview === 'approved') {
         totalAman++
       } else if (prod.statusReview === 'pending') {
@@ -26,7 +23,6 @@ export default class ReportController {
       totalScoreSum += Number(prod.scoreNonSensitive) || 0
     }
 
-    // c. Mathematics
     const avgScore = allProducts.length > 0 ? Math.round((totalScoreSum / allProducts.length) * 100) / 100 : 0
     const successRate = allProducts.length > 0 ? Math.round((totalAman / allProducts.length) * 100) : 0
 
@@ -36,7 +32,7 @@ export default class ReportController {
       totalReview,
       totalDitolak,
       avgScore,
-      successRate
+      successRate,
     }
   }
 }

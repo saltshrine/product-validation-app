@@ -8,34 +8,38 @@ const ReportController = () => import('#controllers/reports_controller')
 const AuthController = () => import('#controllers/auth_controller')
 
 import SimilarityService from '#services/similarity_service'
+import NonSensitiveMatchStrategy from '../app/strategies/non_sensitive_match_strategy.js'
+import SensitiveMatchStrategy from '../app/strategies/sensitive_match_strategy.js'
 
 // Rute Halaman Utama (Redirect ke /products)
-router.get('/', async ({ response }) => {
-  return response.redirect().toPath('/login')
-}).as('home')
+router
+  .get('/', async ({ response }) => {
+    return response.redirect().toPath('/login')
+  })
+  .as('home')
 
 // ==========================================
 // RUTE PRODUCTS & REPORT
 // ==========================================
-router.group(() => {
-  router.get('/products', [ProductsController, 'index'])
-  router.get('/products/create', [ProductsController, 'create'])
-  router.post('/products', [ProductsController, 'store'])
-  router.get('/products/:id', [ProductsController, 'show'])
-  router.get('/products/:id/edit', [ProductsController, 'edit'])
-  router.post('/products/:id/update', [ProductsController, 'update'])
-  router.post('/products/:id/delete', [ProductsController, 'destroy'])
-}).middleware(middleware.auth())
+router
+  .group(() => {
+    router.get('/products', [ProductsController, 'index'])
+    router.get('/products/create', [ProductsController, 'create'])
+    router.post('/products', [ProductsController, 'store'])
+    router.get('/products/:id', [ProductsController, 'show'])
+    router.get('/products/:id/edit', [ProductsController, 'edit'])
+    router.post('/products/:id/update', [ProductsController, 'update'])
+    router.post('/products/:id/delete', [ProductsController, 'destroy'])
+  })
+  .middleware(middleware.auth())
 
-// ==========================================
-// RUTE API (AJAX LIVE TRACKING)
-// ==========================================
 router.post('/api/check-similarity', async ({ request }) => {
   const { title, description, checkType } = request.only(['title', 'description', 'checkType'])
-  
+
   const service = new SimilarityService()
-  const isSensitive = checkType === 'sensitive'
-  const result = service.hitungSkorKemiripan(title || '', description || '', isSensitive)
+  const strategy =
+    checkType === 'sensitive' ? new SensitiveMatchStrategy() : new NonSensitiveMatchStrategy()
+  const result = service.hitungSkorKemiripan(title || '', description || '', strategy)
 
   return {
     percentage: result.percentage,
@@ -44,9 +48,6 @@ router.post('/api/check-similarity', async ({ request }) => {
   }
 })
 
-// ==========================================
-// RUTE CATEGORIES
-// ==========================================
 router.get('/categories', [CategoriesController, 'index'])
 router.get('/categories/create', [CategoriesController, 'create'])
 router.post('/categories', [CategoriesController, 'store'])
@@ -54,13 +55,17 @@ router.post('/categories', [CategoriesController, 'store'])
 // ==========================================
 // RUTE AUTHENTICATION
 // ==========================================
-router.get('/register', async () => {
-  return 'Halaman Register (UI belum dibuat)'
-}).as('new_account.create')
+router
+  .get('/register', async () => {
+    return 'Halaman Register (UI belum dibuat)'
+  })
+  .as('new_account.create')
 
-router.post('/register', async () => {
-  return 'Proses Register'
-}).as('new_account.store')
+router
+  .post('/register', async () => {
+    return 'Proses Register'
+  })
+  .as('new_account.store')
 
 router.get('/login', [AuthController, 'showLogin']).as('session.create')
 router.post('/login', [AuthController, 'login']).as('session.store')

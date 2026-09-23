@@ -36,7 +36,6 @@ export default class Product extends AppBaseModel {
   @column()
   declare statusReview: string
 
-  // --- RELATIONSHIPS ---
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
 
@@ -46,26 +45,18 @@ export default class Product extends AppBaseModel {
   @hasMany(() => ValidationLog)
   declare validationLogs: HasMany<typeof ValidationLog>
 
-  // --- OOP POLYMORPHISM (OVERRIDING) ---
   toSummary(): Record<string, any> {
-    const baseSummary = super.toSummary() // Memanggil method parent
+    const baseSummary = super.toSummary()
     return {
       ...baseSummary,
       title: this.title,
-      status: this.statusReview
+      status: this.statusReview,
     }
   }
 
-  // --- HOOKS ---
-  /**
-   * Hook ini akan otomatis jalan sebelum save/update ke database.
-   * Meskipun validasi utama kita taruh di Service & Controller (agar bisa logging), 
-   * Hook berguna untuk safety net / normalisasi data.
-   */
   @beforeSave()
   static async sanitizeData(product: Product) {
     if (product.$dirty.title) {
-      // Pastikan title tidak ada spasi berlebih di awal/akhir
       product.title = product.title.trim()
     }
   }

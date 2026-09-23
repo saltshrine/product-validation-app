@@ -2,12 +2,10 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 
 export default class AuthController {
-  // Menampilkan halaman login
   async showLogin({ view }: HttpContext) {
     return view.render('auth/login')
   }
 
-  // Memproses data login
   async login({ request, response, session, auth }: HttpContext) {
     const { email, password } = request.only(['email', 'password'])
 
@@ -18,7 +16,6 @@ export default class AuthController {
       session.flash('success', 'Berhasil login!')
       return response.redirect().toPath('/products')
     } catch (error) {
-      // Cetak error asli ke terminal VS Code untuk debugging
       console.log('DETAIL ERROR LOGIN:', error)
 
       session.flash('error', `Gagal: ${error.message}`)
@@ -26,7 +23,6 @@ export default class AuthController {
     }
   }
 
-  // Proses Logout
   async logout({ response, session, auth }: HttpContext) {
     await auth.use('web').logout()
     session.flash('success', 'Berhasil logout!')

@@ -10,7 +10,7 @@ Status bisnis yang digunakan oleh implementasi saat ini adalah:
 - `pending`: skor minimal threshold 25%, tetapi belum mencapai 60%.
 - `rejected`: skor di bawah 25%.
 
-> **Catatan akurasi:** Requirement menyebut `Set<string>` dan Strategy Pattern, tetapi kode aktual saat ini menggunakan `boolean[]` untuk menandai karakter yang sudah dipakai dan belum memiliki folder `strategies/` atau interface `MatchStrategy`. Dokumentasi ini menjelaskan implementasi aktual, lalu membedakan rancangan improvement yang diharapkan.
+> **Catatan akurasi:** Implementasi saat ini sudah menggunakan Strategy Pattern melalui interface `MatchStrategy` dan class `SensitiveMatchStrategy` / `NonSensitiveMatchStrategy`. Meskipun demikian, tracking duplicate masih menggunakan `boolean[]` untuk posisi karakter di input kedua, sehingga `Set<string>` belum digunakan secara literal. Dokumentasi ini menjelaskan implementasi aktual yang sudah refactor, serta membedakan kebutuhan optimasi lanjutan jika diperlukan.
 
 ---
 
@@ -51,7 +51,7 @@ Salah satu skor dipilih sebagai `finalScore` berdasarkan `checkType` yang dikiri
 - Panjang pembagi menggunakan panjang input pertama setelah `trim()`, bukan panjang maksimum kedua string atau jumlah karakter unik.
 - Case-sensitive dan case-insensitive dihitung setiap kali `validasiProduk` dipanggil.
 - Input divalidasi minimal: title 3 karakter, description 5 karakter, category ID positif, price dan stock minimal 0.
-- `ProductsController.store` masih memakai `product.userId = 1`; relasi ke user login belum memakai `auth.user!.id`.
+- `ProductsController.store` memakai `auth.user!.id` untuk menetapkan `userId` agar produk terkait dengan akun yang sedang login.
 - Setiap create dan update menulis satu record histori ke `validation_logs`.
 - Bila kedua input kosong, skor dikembalikan sebagai `0` dan tidak terjadi pembagian dengan nol.
 
@@ -150,7 +150,7 @@ Kesimpulannya, `boolean[]` saat ini merupakan representasi status posisi yang va
 
 ## 2.2 Algoritma Nested Loop
 
-Potongan kode asli dari `app/services/similarity_service.ts`:
+Potongan kode aktual dari `app/services/similarity_service.ts`:
 
 ```typescript
 let matchCount = 0
@@ -163,20 +163,10 @@ for (let i = 0; i < trimmed1.length; i++) {
   for (let j = 0; j < chars2.length; j++) {
     const char2 = chars2[j]
 
-    if (!isMatched[j]) {
-      if (isSensitive) {
-        if (char1 === char2) {
-          matchCount++
-          isMatched[j] = true
-          break
-        }
-      } else {
-        if (char1.toLowerCase() === char2.toLowerCase()) {
-          matchCount++
-          isMatched[j] = true
-          break
-        }
-      }
+    if (!isMatched[j] && strategy.match(char1, char2)) {
+      matchCount++
+      isMatched[j] = true
+      break
     }
   }
 }
@@ -190,9 +180,10 @@ Langkah algoritma:
 4. Loop luar berjalan untuk setiap karakter input pertama.
 5. Loop dalam mencari karakter yang cocok di input kedua.
 6. Posisi yang sudah dipakai dilewati.
-7. Untuk mode sensitive, karakter dibandingkan apa adanya.
-8. Untuk mode non-sensitive, kedua karakter diubah ke lowercase sebelum dibandingkan.
-9. Jika cocok, `matchCount` bertambah satu, posisi ditandai, lalu loop dalam berhenti dengan `break`.
+7. Mode matching diputuskan oleh objek strategy yang dipanggil, bukan `if (isSensitive)` di dalam loop.
+8. `SensitiveMatchStrategy` membandingkan `char1 === char2`.
+9. `NonSensitiveMatchStrategy` membandingkan `char1.toLowerCase() === char2.toLowerCase()`.
+10. Jika cocok, `matchCount` bertambah satu, posisi ditandai, lalu loop dalam berhenti dengan `break`.
 
 ## 2.3 Kompleksitas Waktu & Ruang
 
@@ -223,26 +214,20 @@ Untuk input title dan description yang relatif pendek, `O(n x m)` masih merupaka
 
 ## 2.4 Nested If
 
-Percabangan utama terjadi dalam tiga lapisan:
+Percabangan utama saat ini berbentuk dua lapisan, tetapi logika pemilihan mode matching sudah dipindahkan ke strategy object:
 
 ```typescript
-if (!isMatched[j]) {
-  if (isSensitive) {
-    if (char1 === char2) {
-      // match sensitive
-    }
-  } else {
-    if (char1.toLowerCase() === char2.toLowerCase()) {
-      // match non-sensitive
-    }
-  }
+if (!isMatched[j] && strategy.match(char1, char2)) {
+  matchCount++
+  isMatched[j] = true
+  break
 }
 ```
 
 Urutannya penting:
 
 1. **Duplicate check:** posisi yang sudah digunakan tidak boleh dihitung ulang.
-2. **Mode check:** sistem menentukan apakah perbandingan harus case-sensitive.
+2. **Strategy check:** strategy menentukan cara membandingkan dua karakter.
 3. **Character match:** hanya pasangan yang benar-benar cocok yang menambah skor.
 
 Pada tahap keputusan bisnis, nested if yang berbeda digunakan:
@@ -287,11 +272,14 @@ if (totalChars === 0) {
 
 Dengan demikian, `0 / 0` tidak pernah terjadi.
 
-Pada `validasiProduk`, dua skor dihitung dan salah satunya dipilih:
+Pada `validasiProduk`, dua skor dihitung dengan strategy yang berbeda, lalu salah satunya dipilih:
 
 ```typescript
-const sensitiveResult = this.hitungSkorKemiripan(title, description, true)
-const nonSensitiveResult = this.hitungSkorKemiripan(title, description, false)
+const sensitiveStrategy = new SensitiveMatchStrategy()
+const nonSensitiveStrategy = new NonSensitiveMatchStrategy()
+
+const sensitiveResult = this.hitungSkorKemiripan(title, description, sensitiveStrategy)
+const nonSensitiveResult = this.hitungSkorKemiripan(title, description, nonSensitiveStrategy)
 
 const finalScore = checkType === 'sensitive'
   ? sensitiveResult.percentage
@@ -458,26 +446,19 @@ export default class User extends compose(AppBaseModel, AuthFinder) { ... }
 
 ## 3.3 Polymorphism
 
-Polymorphism yang benar-benar terlihat di codebase adalah method overriding `toSummary()`.
+Polymorphism yang benar-benar terlihat di codebase adalah method overriding `toSummary()`, dan saat ini juga terlihat pada Strategy Pattern untuk matching.
 
-Kode yang bekerja terhadap tipe base dapat memanggil `toSummary()`, tetapi implementasi aktual dapat berbeda untuk `Product` karena `Product` menambahkan `title` dan `status` ke hasil base.
-
-Belum ada polymorphism berbasis Strategy seperti `SensitiveMatchStrategy` dan `NonSensitiveMatchStrategy`. Perbedaan mode matching saat ini direpresentasikan oleh parameter boolean:
+Kode yang bekerja terhadap tipe base dapat memanggil `toSummary()`, tetapi implementasi aktual dapat berbeda untuk `Product` karena `Product` menambahkan `title` dan `status` ke hasil base. Di sisi lain, `SimilarityService` menerima objek yang mengimplementasikan `MatchStrategy`, sehingga pemanggil tidak perlu membedakan mode matching secara manual di dalam loop:
 
 ```typescript
-hitungSkorKemiripan(title, description, true)
-hitungSkorKemiripan(title, description, false)
+const strategy = checkType === 'sensitive'
+  ? new SensitiveMatchStrategy()
+  : new NonSensitiveMatchStrategy()
+
+this.hitungSkorKemiripan(title, description, strategy)
 ```
 
-dan percabangan:
-
-```typescript
-if (isSensitive) {
-  if (char1 === char2) { ... }
-} else {
-  if (char1.toLowerCase() === char2.toLowerCase()) { ... }
-}
-```
+Perubahan ini memungkinkan `SimilarityService` mengikuti polymorphism berbasis strategy, tanpa mengubah return value yang digunakan controller.
 
 ## 3.4 Abstraction
 
@@ -506,7 +487,7 @@ export interface ValidationResult {
 }
 ```
 
-Tidak ada `abstract class MatchStrategy` atau interface `MatchStrategy` di repository saat ini. Jika Strategy Pattern ingin ditambahkan, interface tersebut dapat menjadi kontrak baru, tetapi itu merupakan improvement dan bukan fitur yang sudah berjalan.
+Interface `MatchStrategy` sudah ada di `app/strategies/match_strategy.ts`, dan implementasinya dibagi ke `SensitiveMatchStrategy` serta `NonSensitiveMatchStrategy`. Abstraksi ini memisahkan aturan perbandingan karakter dari logika nested loop dan mengurangi kebutuhan cabang logika di dalam service.
 
 ---
 
@@ -514,29 +495,30 @@ Tidak ada `abstract class MatchStrategy` atau interface `MatchStrategy` di repos
 
 ## 4.1 Strategy Pattern: Status Implementasi
 
-Requirement mengusulkan Strategy Pattern untuk memisahkan:
+Strategy Pattern sudah diterapkan untuk memisahkan:
 
 - `SensitiveMatchStrategy`.
 - `NonSensitiveMatchStrategy`.
 
-Tujuannya adalah menghindari percabangan `if (isSensitive)` dan memudahkan penambahan mode matching baru tanpa mengubah service utama. Dengan Strategy Pattern, service dapat menerima objek strategy yang memiliki method seperti `match(char1, char2)`.
+Tujuannya adalah menghindari percabangan `if (isSensitive)` di dalam nested loop dan memudahkan penambahan mode matching baru tanpa mengubah service utama. `SimilarityService` sekarang menerima objek strategy dengan method `match(char1, char2)`.
 
-Namun, codebase aktual belum menerapkan pola tersebut. Tidak ditemukan:
+Struktur yang ada saat ini:
 
 - Folder `app/strategies/`.
-- `SensitiveMatchStrategy`.
-- `NonSensitiveMatchStrategy`.
-- Interface `MatchStrategy`.
-- Dependency injection strategy ke `SimilarityService`.
+- Interface `MatchStrategy` di `app/strategies/match_strategy.ts`.
+- `SensitiveMatchStrategy` di `app/strategies/sensitive_match_strategy.ts`.
+- `NonSensitiveMatchStrategy` di `app/strategies/non_sensitive_match_strategy.ts`.
+- `hitungSkorKemiripan(input1, input2, strategy)` di `app/services/similarity_service.ts`.
 
-Implementasi aktual masih berupa parameter boolean dan nested if:
+Contoh penggunaan aktual:
 
 ```typescript
-const sensitiveResult = this.hitungSkorKemiripan(title, description, true)
-const nonSensitiveResult = this.hitungSkorKemiripan(title, description, false)
-```
+const sensitiveStrategy = new SensitiveMatchStrategy()
+const nonSensitiveStrategy = new NonSensitiveMatchStrategy()
 
-Untuk penilaian yang mensyaratkan Strategy Pattern, bagian ini perlu dianggap sebagai gap implementasi, bukan diklaim sudah ada.
+const sensitiveResult = this.hitungSkorKemiripan(title, description, sensitiveStrategy)
+const nonSensitiveResult = this.hitungSkorKemiripan(title, description, nonSensitiveStrategy)
+```
 
 ## 4.2 Active Record Pattern
 
@@ -606,7 +588,7 @@ Namun hook tersebut hanya melakukan sanitasi title. Validasi kemiripan dan loggi
 | Persistence log | Model histori skor, threshold, dan status | `app/models/validation_log.ts` |
 | Inheritance | Model turunan dari `AppBaseModel` | `app/models/app_base_model.ts`, `app/models/product.ts`, `app/models/category.ts`, `app/models/validation_log.ts` |
 | Override / polymorphism | `Product.toSummary()` memanggil `super.toSummary()` lalu menambah field product | `app/models/product.ts` |
-| Strategy Pattern | Belum diimplementasikan; matching masih memakai boolean dan if/else | `app/services/similarity_service.ts` |
+| Strategy Pattern | `MatchStrategy` diimplementasikan dengan `SensitiveMatchStrategy` dan `NonSensitiveMatchStrategy`; `SimilarityService` menerima objek strategy yang memutuskan perbandingan karakter | `app/strategies/*.ts`, `app/services/similarity_service.ts` |
 | Active Record | Lucid model menyediakan query, save, delete, preload, dan findOrFail | `app/models/*.ts`, `app/controllers/products_controller.ts` |
 | Observer / Hook | `@beforeSave()` menormalisasi title sebelum penyimpanan | `app/models/product.ts` |
 | Database PostgreSQL | Konfigurasi client `pg` dan koneksi melalui environment | `config/database.ts` |
@@ -628,15 +610,15 @@ Namun hook tersebut hanya melakukan sanitasi title. Validasi kemiripan dan loggi
 4. **Threshold global** membuat implementasi sederhana dan konsisten, tetapi belum memanfaatkan `Category.isSensitive` atau threshold yang berbeda per kategori.
 5. **Status disimpan di Product dan ValidationLog**. Product menyimpan kondisi terbaru, sedangkan ValidationLog menyimpan histori audit setiap percobaan.
 6. **Active Record Lucid** mempercepat pengembangan CRUD, tetapi controller masih memegang cukup banyak orchestration logic.
-7. **Matching masih memakai if/else**, sehingga belum memperoleh fleksibilitas Strategy Pattern.
+7. **Matching sudah dikelola melalui strategy object**, sehingga logika perbandingan karakter terpisah dari nested loop dan lebih mudah diperluas.
 
 ## 6.2 Potensi Improvement
 
-- Implementasikan `MatchStrategy` dengan `SensitiveMatchStrategy` dan `NonSensitiveMatchStrategy` agar mode matching mengikuti Open-Closed Principle.
+- Pertimbangkan apakah `MatchStrategy` perlu dipass ke `SimilarityService` via dependency injection yang lebih formal, bukan instansiasi langsung di `validasiProduk`.
 - Gunakan `Map<string, number>` atau struktur frekuensi jika ingin optimasi matching menjadi lebih dekat ke `O(n + m)` dan tetap menangani duplicate dengan benar.
 - Pertimbangkan Levenshtein distance, Jaro-Winkler, token similarity, atau kombinasi beberapa metrik agar kemiripan teks lebih bermakna daripada pencocokan karakter.
 - Jadikan threshold configurable per kategori, bukan konstanta global `25` dan batas approved `60` yang berada langsung di service.
-- Gunakan `auth.user!.id` pada `ProductsController` daripada hardcode `userId = 1`.
+- Pertahankan pola `auth.user!.id` pada `ProductsController` dan hindari hardcode `userId` di flow produksi.
 - Tambahkan transaction database agar penyimpanan Product dan ValidationLog berhasil atau gagal sebagai satu kesatuan.
 - Tambahkan test unit untuk kasus sensitive, non-sensitive, duplicate character, input kosong, string berbeda panjang, batas tepat 25%, dan batas tepat 60%.
 - Selaraskan komentar migration dan model dengan status runtime `approved`, `pending`, dan `rejected`.
@@ -645,4 +627,4 @@ Namun hook tersebut hanya melakukan sanitasi title. Validasi kemiripan dan loggi
 
 ## Penutup
 
-Secara keseluruhan, aplikasi sudah memiliki alur lengkap dari input, validasi, perhitungan skor, keputusan status, persistence, CRUD, hingga histori dan laporan. Kekuatan utama implementasi adalah pemisahan algoritma ke `SimilarityService`, penggunaan Lucid Active Record, dan pencatatan histori validasi. Gap terpenting terhadap rancangan requirement adalah belum adanya `Set<string>` secara literal dan belum diterapkannya Strategy Pattern.
+Secara keseluruhan, aplikasi sudah memiliki alur lengkap dari input, validasi, perhitungan skor, keputusan status, persistence, CRUD, hingga histori dan laporan. Kekuatan utama implementasi adalah pemisahan algoritma ke `SimilarityService`, penggunaan Strategy Pattern untuk membedakan perbandingan sensitive/non-sensitive, serta penggunaan Lucid Active Record dan pencatatan histori validasi. Gap yang masih ada adalah penggunaan `boolean[]` untuk tracking positional duplicate, bukan `Set<string>` secara literal, dan belum ada optimasi algoritma yang lebih kompleks seperti frekuensi map atau metric similarity tingkat lanjut.

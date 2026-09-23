@@ -9,6 +9,7 @@ export interface ValidationResult {
   scoreNonSensitive: number
   threshold: number
   status: 'approved' | 'pending' | 'rejected'
+  checkType: 'sensitive' | 'non-sensitive'
 }
 
 import type MatchStrategy from '../strategies/match_strategy.js'
@@ -90,6 +91,7 @@ export default class SimilarityService {
       scoreNonSensitive: nonSensitiveResult.percentage,
       threshold,
       status,
+      checkType,
     }
   }
 }

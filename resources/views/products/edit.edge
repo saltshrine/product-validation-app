@@ -41,8 +41,8 @@
     <div>
       <label class="block text-sm font-medium text-gray-700">Tipe Pengecekan Ulang</label>
       <select name="checkType" class="min-h-11 mt-1 block w-full rounded-lg bg-[#f5faff] px-3 py-2.5 text-base font-medium text-[#0759b8] shadow-[rgba(10,114,239,0.2)_0px_0px_0px_1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a72ef] focus-visible:ring-offset-2" required>
-        <option value="sensitive">Sensitive Case</option>
-        <option value="non-sensitive">Non-Sensitive Case</option>
+        <option value="sensitive" {{ product.checkType === 'sensitive' ? 'selected' : '' }}>Sensitive Case</option>
+        <option value="non-sensitive" {{ product.checkType !== 'sensitive' ? 'selected' : '' }}>Non-Sensitive Case</option>
       </select>
     </div>
 

@@ -23,10 +23,12 @@ export class CategorySchema extends BaseModel {
 }
 
 export class ProductSchema extends BaseModel {
-  static $columns = ['categoryId', 'createdAt', 'description', 'id', 'price', 'scoreNonSensitive', 'scoreSensitive', 'statusReview', 'stock', 'title', 'updatedAt', 'userId'] as const
+  static $columns = ['categoryId', 'checkType', 'createdAt', 'description', 'id', 'price', 'scoreNonSensitive', 'scoreSensitive', 'statusReview', 'stock', 'title', 'updatedAt', 'userId'] as const
   $columns = ProductSchema.$columns
   @column()
   declare categoryId: number | null
+  @column()
+  declare checkType: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()

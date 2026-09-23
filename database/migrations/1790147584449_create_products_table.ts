@@ -19,10 +19,9 @@ export default class extends BaseSchema {
       table.integer('stock').notNullable()
       
       // Validation Results
-      table.decimal('score_sensitive', 5, 2).nullable() // misal 100.00
+      table.decimal('score_sensitive', 5, 2).nullable()
       table.decimal('score_non_sensitive', 5, 2).nullable()
-      table.string('status_review').defaultTo('perlu_review') // aman, perlu_review, ditolak
-      
+      table.string('status_review').defaultTo('perlu_review') 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
     })

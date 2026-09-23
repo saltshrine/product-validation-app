@@ -34,6 +34,9 @@ export default class Product extends AppBaseModel {
   declare scoreNonSensitive: number
 
   @column()
+  declare checkType: 'sensitive' | 'non-sensitive' | null
+
+  @column()
   declare statusReview: string
 
   @belongsTo(() => User)
